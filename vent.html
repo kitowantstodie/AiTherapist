@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Chat 🧑‍⚕️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: Arial; background: #1e1e1e; color: #fff; display: flex; justify-content: center; padding: 10px; margin: 0; }
+.chat-container { width: 100%; max-width: 500px; background: #2c2c2c; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; flex-direction: column; height: 90vh; overflow: hidden; }
+#chat { padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.message { max-width: 80%; padding: 10px 14px; border-radius: 15px; line-height: 1.4; word-wrap: break-word; opacity: 0; transform: translateY(20px); animation: slideFade 0.4s forwards; }
+@keyframes slideFade {
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai { background: #3a3a3a; align-self: flex-start; font-size: 1.4em; border-top-left-radius: 0; color: #fff; }
+.user { background: #4a90e2; align-self: flex-end; border-top-right-radius: 0; color: #fff; }
+.controls { display: flex; padding: 10px; gap: 10px; flex-wrap: wrap; }
+select, button, #userInput { font-size: 1em; padding: 10px; border-radius: 5px; border: none; outline: none; }
+select, button { background: #555; color: #fff; cursor: pointer; transition: background 0.2s; }
+select:hover, button:hover { background: #666; }
+#userInput { flex-grow: 1; background: #3a3a3a; color: #fff; }
+#userInput::placeholder { color: #bbb; }
+@media(max-width: 400px) { .chat-container { height: 95vh; } .message { font-size: 1.1em; padding: 8px 12px; } }
+.typing { font-style: italic; opacity: 0.6; position: relative; }
+.typing::after { content: '...'; animation: dots 1s infinite; }
+@keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="controls">
+    <select id="modeSelect">
+      <option value="vent">Vent</option>
+      <option value="therapist">Therapist</option>
+    </select>
+    <button onclick="startSession()">Start</button>
+  </div>
+  <div id="chat"></div>
+  <input type="text" id="userInput" placeholder="Type here..." disabled>
+</div>
+
+<script>
+const aiEmoji = "🧑‍⚕️";
+
+const ventResponses = [
+  "I hear you.", "Keep going.", "Say what you need.", "I listen.", "Go on.",
+  "That sounds tough.", "I'm here with you.", "Take your time.",
+  "I understand how frustrating that must be.", "Tell me everything you want to say."
+];
+
+const therapistResponses = [
+  "What started this?", "How did you feel?", "What do you need right now?",
+  "What made this harder?", "Tell me the next part.", "How long have you felt this way?",
+  "What do you think would help?", "What emotions are coming up?"
+];
+
+const greetings = [
+  "Hello! How are you feeling today?", "Hi there! I'm here to listen.", "Hey! What's on your mind?",
+  "Good to see you! Tell me what's happening.", "Hi! I'm ready to listen."
+];
+
+const ventEnd = "Thanks for sharing. I'm here anytime you need.";
+const therapistEnd = "Thank you for opening up. Take care of yourself.";
+
+let mode = "";
+
+function startSession() {
+  mode = document.getElementById("modeSelect").value;
+  const input = document.getElementById("userInput");
+  input.disabled = false;
+  input.focus();
+  addMessage(aiEmoji + " " + (mode === "vent" ? "Vent session started." : "Therapist session started."), "ai");
+}
+
+function addMessage(text, type) {
+  const chat = document.getElementById("chat");
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message", type);
+  msgDiv.textContent = text;
+  chat.appendChild(msgDiv);
+  chat.scrollTop = chat.scrollHeight;
+  return msgDiv;
+}
+
+function getSmartReply(msg, mode) {
+  msg = msg.toLowerCase();
+
+  if (/^(hello|hi|hey)$/i.test(msg)) return greetings[Math.floor(Math.random() * greetings.length)];
+
+  const mentionsOthers = /friend|friends|family|partner|they|them|boss|coworker/.test(msg);
+  const negativeFeeling = /feel|bad|shit|sad|angry|mad|tired|stressed|hate|scared|anxious|guilty|overwhelmed|bored/.test(msg);
+  const positiveFeeling = /happy|excited|love|good|fun|great/.test(msg);
+  const shortMsg = msg.length <= 3;
+
+  if (negativeFeeling && mentionsOthers) return "Tell me what they did.";
+  if (negativeFeeling) return "I hear you. Want to tell me more about why?";
+  if (positiveFeeling) return "That’s great! Tell me more about it.";
+  if (msg.includes("alone")) return "Who do you wish was with you right now?";
+  if (shortMsg) return "Tell me more.";
+
+  const responses = mode === "vent" ? ventResponses : therapistResponses;
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+function simulateTyping(text) {
+  const typingDiv = addMessage(aiEmoji + " is typing", "ai");
+  typingDiv.classList.add("typing");
+  setTimeout(() => {
+    typingDiv.remove();
+    addMessage(text, "ai");
+  }, 1000 + Math.random() * 1000);
+}
+
+function sendMessage(msg) {
+  if (!msg) return;
+  addMessage(msg, "user");
+
+  if (msg.toLowerCase() === "quit") return;
+
+  if (msg.toLowerCase() === "thats all") {
+    addMessage(mode === "vent" ? ventEnd : therapistEnd, "ai");
+    return;
+  }
+
+  simulateTyping(getSmartReply(msg, mode));
+}
+
+document.getElementById("userInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    sendMessage(this.value.trim());
+    this.value = "";
+  }
+});
+</script>
+
+</body>
+</html>
